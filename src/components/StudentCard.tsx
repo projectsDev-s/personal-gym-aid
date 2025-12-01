@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Edit, FileText } from "lucide-react";
+import { User, Edit, FileText, Plus } from "lucide-react";
 import { Student } from "@/types/student";
 import { useNavigate } from "react-router-dom";
 
@@ -75,6 +75,17 @@ export const StudentCard = ({ student, onEdit }: StudentCardProps) => {
           )}
         </div>
       )}
+
+      <div className="mt-4 pt-4 border-t">
+        <Button 
+          size="sm" 
+          className="w-full gap-2"
+          onClick={() => navigate(`/students/${student.id}/workout/new`)}
+        >
+          <Plus className="w-4 h-4" />
+          Criar Novo Treino
+        </Button>
+      </div>
     </Card>
   );
 };
