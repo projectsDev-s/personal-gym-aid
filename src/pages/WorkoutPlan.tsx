@@ -1,16 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, History } from "lucide-react";
+import { ArrowLeft, Pencil, History, Download } from "lucide-react";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { WorkoutDay } from "@/types/student";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export default function WorkoutPlan() {
   const { workoutId } = useParams();
   const navigate = useNavigate();
+  const printRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [weekSchedule, setWeekSchedule] = useState<string[]>([]);
@@ -89,6 +93,56 @@ export default function WorkoutPlan() {
 
   const workoutLabels = ["A", "B", "C", "D", "E", "F"];
 
+  const handleExportPDF = async () => {
+    if (!printRef.current) return;
+    
+    setExporting(true);
+    try {
+      const element = printRef.current;
+      
+      // Capture the element as canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`treino-${studentName.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+      toast.success("PDF exportado com sucesso!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Erro ao exportar PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -121,6 +175,15 @@ export default function WorkoutPlan() {
                 Histórico
               </Button>
               <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExportPDF}
+                disabled={exporting}
+              >
+                <Download className="w-4 h-4" />
+                {exporting ? "Exportando..." : "Exportar PDF"}
+              </Button>
+              <Button
                 className="gap-2 font-bold"
                 onClick={() => navigate(`/workout/${workoutId}/edit`)}
               >
@@ -132,7 +195,7 @@ export default function WorkoutPlan() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8" ref={printRef}>
         {weekSchedule.some((day) => day) && (
           <div className="mb-8 p-6 bg-muted/50 rounded-xl">
             <h2 className="text-xl font-bold mb-4">Cronograma Semanal</h2>
