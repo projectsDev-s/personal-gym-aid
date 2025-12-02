@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Edit, FileText, Plus } from "lucide-react";
+import { User, Edit, History, Plus } from "lucide-react";
 import { Student } from "@/types/student";
 import { useNavigate } from "react-router-dom";
 
@@ -30,19 +30,15 @@ export const StudentCard = ({ student, onEdit }: StudentCardProps) => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onEdit(student)}
-          >
+          <Button variant="outline" size="icon" onClick={() => onEdit(student)}>
             <Edit className="w-4 h-4" />
           </Button>
           <Button
             variant="default"
             size="icon"
-            onClick={() => navigate(`/workout/${student.id}`)}
+            onClick={() => navigate(`/students/${student.id}/workouts`)}
           >
-            <FileText className="w-4 h-4" />
+            <History className="w-4 h-4" />
           </Button>
         </div>
       </div>
