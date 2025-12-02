@@ -7,7 +7,9 @@ import Students from "./pages/Students";
 import NewStudent from "./pages/NewStudent";
 import EditStudent from "./pages/EditStudent";
 import NewWorkout from "./pages/NewWorkout";
+import EditWorkout from "./pages/EditWorkout";
 import WorkoutPlan from "./pages/WorkoutPlan";
+import WorkoutHistory from "./pages/WorkoutHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +25,9 @@ const App = () => (
           <Route path="/students/new" element={<NewStudent />} />
           <Route path="/students/edit/:id" element={<EditStudent />} />
           <Route path="/students/:studentId/workout/new" element={<NewWorkout />} />
-          <Route path="/workout/:studentId" element={<WorkoutPlan />} />
+          <Route path="/students/:studentId/workouts" element={<WorkoutHistory />} />
+          <Route path="/workout/:workoutId" element={<WorkoutPlan />} />
+          <Route path="/workout/:workoutId/edit" element={<EditWorkout />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
