@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, History, Download } from "lucide-react";
 import { WorkoutCard } from "@/components/WorkoutCard";
+import { PDFCoverPage } from "@/components/PDFCoverPage";
 import { WorkoutDay } from "@/types/student";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ export default function WorkoutPlan() {
   const { workoutId } = useParams();
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [studentName, setStudentName] = useState("");
@@ -94,21 +96,10 @@ export default function WorkoutPlan() {
   const workoutLabels = ["A", "B", "C", "D", "E", "F"];
 
   const handleExportPDF = async () => {
-    if (!printRef.current) return;
+    if (!printRef.current || !coverRef.current) return;
     
     setExporting(true);
     try {
-      const element = printRef.current;
-      
-      // Capture the element as canvas
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -117,19 +108,39 @@ export default function WorkoutPlan() {
 
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
+
+      // Capture cover page
+      const coverCanvas = await html2canvas(coverRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#18181b",
+      });
+      const coverImgData = coverCanvas.toDataURL("image/png");
+      const coverImgHeight = (coverCanvas.height * imgWidth) / coverCanvas.width;
+      pdf.addImage(coverImgData, "PNG", 0, 0, imgWidth, Math.min(coverImgHeight, pageHeight));
+
+      // Capture workout content
+      const contentCanvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+      const contentImgData = contentCanvas.toDataURL("image/png");
+      const contentImgHeight = (contentCanvas.height * imgWidth) / contentCanvas.width;
+      let heightLeft = contentImgHeight;
       let position = 0;
 
-      // Add first page
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      // Add content pages
+      pdf.addPage();
+      pdf.addImage(contentImgData, "PNG", 0, position, imgWidth, contentImgHeight);
       heightLeft -= pageHeight;
 
-      // Add additional pages if needed
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
+        position = heightLeft - contentImgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        pdf.addImage(contentImgData, "PNG", 0, position, imgWidth, contentImgHeight);
         heightLeft -= pageHeight;
       }
 
@@ -195,6 +206,11 @@ export default function WorkoutPlan() {
         </div>
       </div>
 
+      {/* Hidden cover page for PDF */}
+      <div className="absolute -left-[9999px]" ref={coverRef}>
+        <PDFCoverPage studentName={studentName} />
+      </div>
+
       <div className="container mx-auto px-4 py-8" ref={printRef}>
         {weekSchedule.some((day) => day) && (
           <div className="mb-8 p-6 bg-muted/50 rounded-xl">
@@ -225,7 +241,7 @@ export default function WorkoutPlan() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-1 gap-4">
           {workouts.map((workout, index) => (
             <WorkoutCard
               key={workout.id}
