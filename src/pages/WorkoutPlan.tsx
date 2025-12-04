@@ -141,7 +141,7 @@ export default function WorkoutPlan() {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#f3f4f6",
+        backgroundColor: "#334155",
       });
       const infoImgData = infoCanvas.toDataURL("image/png");
       pdf.addImage(infoImgData, "PNG", 0, 0, imgWidth, pageHeight);
@@ -152,7 +152,7 @@ export default function WorkoutPlan() {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#f3f4f6",
+        backgroundColor: "#334155",
       });
       const workoutsImgData = workoutsCanvas.toDataURL("image/png");
       const workoutsImgHeight = (workoutsCanvas.height * imgWidth) / workoutsCanvas.width;
