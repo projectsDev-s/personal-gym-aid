@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, History, Download } from "lucide-react";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PDFCoverPage } from "@/components/PDFCoverPage";
-import { WorkoutDay } from "@/types/student";
+import { PDFStudentInfoPage } from "@/components/PDFStudentInfoPage";
+import { PDFWorkoutsPage } from "@/components/PDFWorkoutsPage";
+import { WorkoutDay, Student } from "@/types/student";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -15,10 +17,13 @@ export default function WorkoutPlan() {
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
+  const workoutsRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [studentData, setStudentData] = useState<Partial<Student>>({});
   const [weekSchedule, setWeekSchedule] = useState<string[]>([]);
   const [weeklyReps, setWeeklyReps] = useState<Array<{ reps: string; rest: string }>>([]);
   const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
@@ -32,7 +37,7 @@ export default function WorkoutPlan() {
         .from("workout_plans")
         .select(`
           *,
-          students (name, id)
+          students (*)
         `)
         .eq("id", workoutId)
         .single();
@@ -41,6 +46,17 @@ export default function WorkoutPlan() {
 
       setStudentName(planData.students.name);
       setStudentId(planData.students.id);
+      setStudentData({
+        name: planData.students.name,
+        age: planData.students.age,
+        gender: planData.students.gender as "M" | "F" | "Outro",
+        objective: planData.students.objective,
+        weight: planData.students.weight,
+        bodyFat: planData.students.body_fat,
+        muscleMass: planData.students.muscle_mass,
+        bmi: planData.students.bmi,
+        restrictions: planData.students.restrictions,
+      });
 
       setWeekSchedule([
         planData.week_day1 || "",
@@ -96,7 +112,7 @@ export default function WorkoutPlan() {
   const workoutLabels = ["A", "B", "C", "D", "E", "F"];
 
   const handleExportPDF = async () => {
-    if (!printRef.current || !coverRef.current) return;
+    if (!coverRef.current || !infoRef.current || !workoutsRef.current) return;
     
     setExporting(true);
     try {
@@ -106,8 +122,8 @@ export default function WorkoutPlan() {
         format: "a4",
       });
 
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      const imgWidth = 210;
+      const pageHeight = 297;
 
       // Capture cover page
       const coverCanvas = await html2canvas(coverRef.current, {
@@ -117,30 +133,41 @@ export default function WorkoutPlan() {
         backgroundColor: "#18181b",
       });
       const coverImgData = coverCanvas.toDataURL("image/png");
-      const coverImgHeight = (coverCanvas.height * imgWidth) / coverCanvas.width;
-      pdf.addImage(coverImgData, "PNG", 0, 0, imgWidth, Math.min(coverImgHeight, pageHeight));
+      pdf.addImage(coverImgData, "PNG", 0, 0, imgWidth, pageHeight);
 
-      // Capture workout content
-      const contentCanvas = await html2canvas(printRef.current, {
+      // Capture student info page
+      pdf.addPage();
+      const infoCanvas = await html2canvas(infoRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#f3f4f6",
       });
-      const contentImgData = contentCanvas.toDataURL("image/png");
-      const contentImgHeight = (contentCanvas.height * imgWidth) / contentCanvas.width;
-      let heightLeft = contentImgHeight;
-      let position = 0;
+      const infoImgData = infoCanvas.toDataURL("image/png");
+      pdf.addImage(infoImgData, "PNG", 0, 0, imgWidth, pageHeight);
 
-      // Add content pages
+      // Capture workouts page
       pdf.addPage();
-      pdf.addImage(contentImgData, "PNG", 0, position, imgWidth, contentImgHeight);
+      const workoutsCanvas = await html2canvas(workoutsRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#f3f4f6",
+      });
+      const workoutsImgData = workoutsCanvas.toDataURL("image/png");
+      const workoutsImgHeight = (workoutsCanvas.height * imgWidth) / workoutsCanvas.width;
+      
+      // Handle multiple pages for workouts if needed
+      let heightLeft = workoutsImgHeight;
+      let position = 0;
+      
+      pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
       heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - contentImgHeight;
+        position = heightLeft - workoutsImgHeight;
         pdf.addPage();
-        pdf.addImage(contentImgData, "PNG", 0, position, imgWidth, contentImgHeight);
+        pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
         heightLeft -= pageHeight;
       }
 
@@ -206,9 +233,21 @@ export default function WorkoutPlan() {
         </div>
       </div>
 
-      {/* Hidden cover page for PDF */}
-      <div className="absolute -left-[9999px]" ref={coverRef}>
-        <PDFCoverPage studentName={studentName} />
+      {/* Hidden PDF pages */}
+      <div className="absolute -left-[9999px]">
+        <div ref={coverRef}>
+          <PDFCoverPage studentName={studentName} />
+        </div>
+        <div ref={infoRef}>
+          <PDFStudentInfoPage 
+            student={studentData} 
+            weekSchedule={weekSchedule} 
+            weeklyReps={weeklyReps} 
+          />
+        </div>
+        <div ref={workoutsRef}>
+          <PDFWorkoutsPage workouts={workouts} />
+        </div>
       </div>
 
       <div className="container mx-auto px-4 py-8" ref={printRef}>
