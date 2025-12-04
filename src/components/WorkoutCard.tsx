@@ -1,17 +1,9 @@
 import { WorkoutDay } from "@/types/student";
-import { cn } from "@/lib/utils";
 
 interface WorkoutCardProps {
   workout: WorkoutDay;
   label: string;
 }
-
-const colorClasses = {
-  orange: "bg-vibrant-orange",
-  green: "bg-vibrant-green",
-  purple: "bg-vibrant-purple",
-  red: "bg-vibrant-red",
-};
 
 export const WorkoutCard = ({ workout, label }: WorkoutCardProps) => {
   // Split exercises into two columns
@@ -21,16 +13,16 @@ export const WorkoutCard = ({ workout, label }: WorkoutCardProps) => {
 
   return (
     <div className="flex rounded-lg overflow-hidden border-2 border-border bg-card shadow-lg">
-      {/* Left colored bar with label */}
-      <div className={cn("w-16 flex-shrink-0 flex flex-col items-center justify-center", colorClasses[workout.color])}>
+      {/* Left colored bar with label - Always Orange */}
+      <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center bg-vibrant-orange">
         <span className="text-white font-black text-xs tracking-wider writing-vertical">TREINO</span>
         <span className="text-white font-black text-3xl mt-1">{label}</span>
       </div>
 
       {/* Content area */}
       <div className="flex-1 p-4">
-        {/* Header with workout name */}
-        <div className={cn("px-3 py-2 rounded-md mb-4 inline-block", colorClasses[workout.color])}>
+        {/* Header with workout name - Always Orange */}
+        <div className="px-3 py-2 rounded-md mb-4 inline-block bg-vibrant-orange">
           <h3 className="text-white font-black text-sm uppercase tracking-wide">
             {workout.name}
           </h3>
