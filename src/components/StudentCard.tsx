@@ -1,16 +1,24 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Edit, History, Plus } from "lucide-react";
+import { User, Edit, History, Plus, Trash2 } from "lucide-react";
 import { Student } from "@/types/student";
 import { useNavigate } from "react-router-dom";
 
 interface StudentCardProps {
   student: Student;
   onEdit: (student: Student) => void;
+  onDelete: (studentId: string) => void;
 }
 
-export const StudentCard = ({ student, onEdit }: StudentCardProps) => {
+export const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
   const navigate = useNavigate();
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Tem certeza que deseja excluir o aluno "${student.name}"? Esta ação não pode ser desfeita e todos os treinos relacionados serão excluídos.`)) {
+      onDelete(student.id);
+    }
+  };
 
   return (
     <Card className="p-6 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary">
@@ -39,6 +47,14 @@ export const StudentCard = ({ student, onEdit }: StudentCardProps) => {
             onClick={() => navigate(`/students/${student.id}/workouts`)}
           >
             <History className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleDelete}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Calendar, Eye } from "lucide-react";
+import { ArrowLeft, Plus, Calendar, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -72,6 +72,29 @@ export default function WorkoutHistory() {
     red: "bg-vibrant-red",
   };
 
+  const handleDeleteWorkout = async (workoutId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!window.confirm("Tem certeza que deseja excluir este treino? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("workout_plans")
+        .delete()
+        .eq("id", workoutId);
+
+      if (error) throw error;
+
+      toast.success("Treino excluído com sucesso!");
+      fetchData(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+      toast.error("Erro ao excluir treino");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -136,16 +159,26 @@ export default function WorkoutHistory() {
                         })}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/workout/${workout.id}`);
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/workout/${workout.id}`);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleDeleteWorkout(workout.id, e)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

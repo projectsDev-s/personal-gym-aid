@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, History, Eye, EyeOff, X, Download } from "lucide-react";
+import { ArrowLeft, Pencil, History, Eye, EyeOff, X, Download, Trash2 } from "lucide-react";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PDFCoverPage } from "@/components/PDFCoverPage";
 import { PDFStudentInfoPage } from "@/components/PDFStudentInfoPage";
@@ -225,6 +225,27 @@ export default function WorkoutPlan() {
     }
   };
 
+  const handleDeleteWorkout = async () => {
+    if (!window.confirm("Tem certeza que deseja excluir este treino? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("workout_plans")
+        .delete()
+        .eq("id", workoutId);
+
+      if (error) throw error;
+
+      toast.success("Treino excluído com sucesso!");
+      navigate(`/students/${studentId}/workouts`);
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+      toast.error("Erro ao excluir treino");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -279,6 +300,14 @@ export default function WorkoutPlan() {
               >
                 <Pencil className="w-4 h-4" />
                 Editar
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={handleDeleteWorkout}
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir
               </Button>
             </div>
           </div>

@@ -52,6 +52,32 @@ export default function Students() {
     navigate(`/students/edit/${student.id}`);
   };
 
+  const handleDeleteStudent = async (studentId: string) => {
+    try {
+      // First, delete all workout plans for this student
+      const { error: workoutsError } = await supabase
+        .from("workout_plans")
+        .delete()
+        .eq("student_id", studentId);
+
+      if (workoutsError) throw workoutsError;
+
+      // Then delete the student
+      const { error: studentError } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", studentId);
+
+      if (studentError) throw studentError;
+
+      toast.success("Aluno excluído com sucesso!");
+      fetchStudents(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      toast.error("Erro ao excluir aluno");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b">
@@ -90,6 +116,7 @@ export default function Students() {
                   key={student.id}
                   student={student}
                   onEdit={handleEdit}
+                  onDelete={handleDeleteStudent}
                 />
               ))}
             </div>
