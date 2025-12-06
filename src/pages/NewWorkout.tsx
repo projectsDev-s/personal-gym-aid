@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +50,9 @@ export default function NewWorkout() {
     week3: { reps: "", rest: "" },
     week4: { reps: "", rest: "" },
   });
+
+  const [recommendations, setRecommendations] = useState("");
+  const [trainingMethods, setTrainingMethods] = useState("");
 
   const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([
     {
@@ -147,6 +151,8 @@ export default function NewWorkout() {
           week3_rest: weeklyReps.week3.rest,
           week4_reps: weeklyReps.week4.reps,
           week4_rest: weeklyReps.week4.rest,
+          recommendations: recommendations || null,
+          training_methods: trainingMethods || null,
         })
         .select()
         .single();
@@ -286,6 +292,28 @@ export default function NewWorkout() {
                 </div>
               ))}
             </div>
+          </Card>
+
+          {/* Recommendations */}
+          <Card className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Recomendações</h2>
+            <Textarea
+              placeholder="Digite as recomendações de treino (ex: Mobilidade de tronco e ombros nos dias de treino de membros superiores e CARDIO...)"
+              value={recommendations}
+              onChange={(e) => setRecommendations(e.target.value)}
+              className="min-h-[150px]"
+            />
+          </Card>
+
+          {/* Training Methods */}
+          <Card className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Métodos de Treino</h2>
+            <Textarea
+              placeholder="Digite os métodos de treino (ex: BI-SET: Realizar dois exercícios consecutivos sem descanso...)"
+              value={trainingMethods}
+              onChange={(e) => setTrainingMethods(e.target.value)}
+              className="min-h-[200px]"
+            />
           </Card>
 
           {/* Workout Days */}

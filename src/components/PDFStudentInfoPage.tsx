@@ -1,93 +1,87 @@
-import { Student } from "@/types/student";
+import logoSteven from "@/assets/logo-steven.png";
 
 interface PDFStudentInfoPageProps {
-  student: Partial<Student>;
   weekSchedule: string[];
   weeklyReps: Array<{ reps: string; rest: string }>;
 }
 
-export const PDFStudentInfoPage = ({ student, weekSchedule, weeklyReps }: PDFStudentInfoPageProps) => {
+export const PDFStudentInfoPage = ({ weekSchedule, weeklyReps }: PDFStudentInfoPageProps) => {
   return (
-    <div className="min-h-[297mm] w-[210mm] bg-slate-700 p-8">
-      {/* Student Info Cards */}
-      <div className="mb-10">
-        {/* Name Card */}
-        <div className="bg-white rounded-lg shadow-lg mb-4 overflow-hidden">
-          <div className="p-4 text-center border-b border-gray-200">
-            <span className="text-xs text-gray-500 uppercase tracking-wide">NOME: </span>
-            <span className="font-black text-xl text-slate-800">{student.name?.toUpperCase()}</span>
-          </div>
-          
-          {/* Info grid row 1 */}
-          <div className="grid grid-cols-5 divide-x divide-gray-200">
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">IDADE</p>
-              <p className="font-bold text-slate-800">{student.age || "-"}</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">OBJETIVO</p>
-              <p className="font-bold text-slate-800 text-sm">{student.objective?.toUpperCase() || "-"}</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">GÊNERO</p>
-              <p className="font-bold text-slate-800">{student.gender || "-"}</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">PESO</p>
-              <p className="font-bold text-slate-800">{student.weight ? `${student.weight}kg` : "-"}</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">% GORD</p>
-              <p className="font-bold text-slate-800">{student.bodyFat ? `${student.bodyFat}%` : "-"}</p>
-            </div>
-          </div>
-          
-          {/* Info grid row 2 */}
-          <div className="grid grid-cols-3 divide-x divide-gray-200 border-t border-gray-200">
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">% MASSA</p>
-              <p className="font-bold text-slate-800">{student.muscleMass ? `${student.muscleMass}%` : "-"}</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">IMC</p>
-              <p className="font-bold text-slate-800">{student.bmi || "-"}</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-xs text-gray-500 uppercase mb-1">OBS</p>
-              <p className="font-bold text-slate-800 text-sm">{student.restrictions?.toUpperCase() || "SEM RESTRIÇÕES"}</p>
-            </div>
-          </div>
-        </div>
+    <div className="h-[297mm] w-[210mm] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-8 relative flex flex-col justify-center">
+      {/* Background decorative elements */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
+      
+      {/* Logo */}
+      <div className="flex justify-center mb-6 relative z-10">
+        <img 
+          src={logoSteven} 
+          alt="Steven Cardoso Logo" 
+          className="w-40 h-auto opacity-90"
+        />
       </div>
 
-      {/* Weekly Schedule */}
-      <div className="mb-10">
-        <h2 className="text-2xl font-black text-center mb-6 tracking-wide text-white">SEMANAS 1,2,3-4</h2>
-        <div className="grid grid-cols-5 gap-3">
-          {weekSchedule.map((day, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="p-3 text-center">
-                <p className="text-xs font-bold text-gray-500 uppercase mb-2">{index + 1}º DIA</p>
-                <p className="font-bold text-slate-800 text-sm">{day?.toUpperCase() || "-"}</p>
+      {/* Content Container - Centered */}
+      <div className="flex-1 flex flex-col justify-center relative z-10">
+        {/* Cronograma Semanal */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="h-1 w-20 bg-orange-500 rounded-full mr-4"></div>
+            <h2 className="text-3xl font-black text-center tracking-wider text-white uppercase">
+              CRONOGRAMA SEMANAL
+            </h2>
+            <div className="h-1 w-20 bg-orange-500 rounded-full ml-4"></div>
+          </div>
+          
+          <div className="grid grid-cols-5 gap-3">
+            {weekSchedule.map((day, index) => (
+              <div 
+                key={index} 
+                className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-2xl overflow-hidden border-2 border-orange-500/20"
+              >
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-center">
+                  <p className="text-xs font-black text-white uppercase tracking-wider">{index + 1}º DIA</p>
+                </div>
+                <div className="p-4 text-center min-h-[70px] flex items-center justify-center">
+                  <p className="font-black text-slate-800 text-sm leading-tight">{day?.toUpperCase() || "-"}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Weekly Repetitions */}
-      <div>
-        <h2 className="text-2xl font-black text-center mb-6 tracking-wide text-white">REPETIÇÕES SEMANAIS 1,2,3-4</h2>
-        <div className="grid grid-cols-4 gap-3">
-          {weeklyReps.map((week, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="p-4 text-center">
-                <p className="text-xs font-bold text-gray-500 uppercase underline mb-2">SEM. {index + 1}</p>
-                <p className="font-bold text-slate-800">{week.reps || "-"} REPS</p>
-                <p className="text-xs text-gray-500 underline mt-1">{week.rest || "-"} DESC.</p>
+        {/* Repetições Semanais */}
+        <div>
+          <div className="flex items-center justify-center mb-4">
+            <div className="h-1 w-20 bg-orange-500 rounded-full mr-4"></div>
+            <h2 className="text-3xl font-black text-center tracking-wider text-white uppercase">
+              REPETIÇÕES SEMANAIS
+            </h2>
+            <div className="h-1 w-20 bg-orange-500 rounded-full ml-4"></div>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-3">
+            {weeklyReps.map((week, index) => (
+              <div 
+                key={index} 
+                className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-2xl overflow-hidden border-2 border-orange-500/20"
+              >
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-center">
+                  <p className="text-xs font-black text-white uppercase tracking-wider">SEMANA {index + 1}</p>
+                </div>
+                <div className="p-5 text-center">
+                  <div className="mb-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">REPS</p>
+                    <p className="font-black text-slate-800 text-lg">{week.reps || "-"}</p>
+                  </div>
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">DESC.</p>
+                    <p className="font-black text-slate-800 text-base">{week.rest || "-"}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

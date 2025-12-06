@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, History, Download } from "lucide-react";
+import { ArrowLeft, Pencil, History, Download, Eye, EyeOff, X } from "lucide-react";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PDFCoverPage } from "@/components/PDFCoverPage";
 import { PDFStudentInfoPage } from "@/components/PDFStudentInfoPage";
 import { PDFWorkoutsPage } from "@/components/PDFWorkoutsPage";
+import { PDFRecommendationsPage } from "@/components/PDFRecommendationsPage";
 import { WorkoutDay, Student } from "@/types/student";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,14 +20,18 @@ export default function WorkoutPlan() {
   const coverRef = useRef<HTMLDivElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
   const workoutsRef = useRef<HTMLDivElement>(null);
+  const recommendationsRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [studentData, setStudentData] = useState<Partial<Student>>({});
   const [weekSchedule, setWeekSchedule] = useState<string[]>([]);
   const [weeklyReps, setWeeklyReps] = useState<Array<{ reps: string; rest: string }>>([]);
   const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
+  const [recommendations, setRecommendations] = useState("");
+  const [trainingMethods, setTrainingMethods] = useState("");
   useEffect(() => {
     fetchWorkout();
   }, [workoutId]);
@@ -73,6 +78,9 @@ export default function WorkoutPlan() {
         { reps: planData.week4_reps || "", rest: planData.week4_rest || "" },
       ]);
 
+      setRecommendations(planData.recommendations || "");
+      setTrainingMethods(planData.training_methods || "");
+
       const { data: daysData, error: daysError } = await supabase
         .from("workout_days")
         .select(`
@@ -114,8 +122,13 @@ export default function WorkoutPlan() {
   const handleExportPDF = async () => {
     if (!coverRef.current || !infoRef.current || !workoutsRef.current) return;
     
+    const hasRecommendations = recommendations || trainingMethods;
+    
     setExporting(true);
     try {
+      // Small delay to ensure all elements are rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -131,6 +144,7 @@ export default function WorkoutPlan() {
         useCORS: true,
         logging: false,
         backgroundColor: "#18181b",
+        allowTaint: true,
       });
       const coverImgData = coverCanvas.toDataURL("image/png");
       pdf.addImage(coverImgData, "PNG", 0, 0, imgWidth, pageHeight);
@@ -141,7 +155,8 @@ export default function WorkoutPlan() {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#334155",
+        backgroundColor: "#18181b",
+        allowTaint: true,
       });
       const infoImgData = infoCanvas.toDataURL("image/png");
       pdf.addImage(infoImgData, "PNG", 0, 0, imgWidth, pageHeight);
@@ -152,7 +167,8 @@ export default function WorkoutPlan() {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#334155",
+        backgroundColor: "#18181b",
+        allowTaint: true,
       });
       const workoutsImgData = workoutsCanvas.toDataURL("image/png");
       const workoutsImgHeight = (workoutsCanvas.height * imgWidth) / workoutsCanvas.width;
@@ -169,6 +185,20 @@ export default function WorkoutPlan() {
         pdf.addPage();
         pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
         heightLeft -= pageHeight;
+      }
+
+      // Capture recommendations page if exists
+      if (hasRecommendations && recommendationsRef.current) {
+        pdf.addPage();
+        const recommendationsCanvas = await html2canvas(recommendationsRef.current, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          allowTaint: true,
+        });
+        const recommendationsImgData = recommendationsCanvas.toDataURL("image/png");
+        pdf.addImage(recommendationsImgData, "PNG", 0, 0, imgWidth, pageHeight);
       }
 
       pdf.save(`treino-${studentName.replace(/\s+/g, "-").toLowerCase()}.pdf`);
@@ -215,6 +245,23 @@ export default function WorkoutPlan() {
               <Button
                 variant="outline"
                 className="gap-2"
+                onClick={() => setShowPDFPreview(!showPDFPreview)}
+              >
+                {showPDFPreview ? (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    Ocultar PDF
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    Visualizar PDF
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
                 onClick={handleExportPDF}
                 disabled={exporting}
               >
@@ -233,21 +280,73 @@ export default function WorkoutPlan() {
         </div>
       </div>
 
-      {/* Hidden PDF pages */}
-      <div className="absolute -left-[9999px]">
-        <div ref={coverRef}>
+      {/* PDF Preview Modal */}
+      {showPDFPreview && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white"
+              onClick={() => setShowPDFPreview(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            <div className="bg-white rounded-lg shadow-2xl p-4 space-y-4 max-h-[90vh] overflow-y-auto">
+              {/* Cover Page - Preview only (no ref) */}
+              <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+                <PDFCoverPage studentName={studentName} />
+              </div>
+              
+              {/* Info Page - Preview only (no ref) */}
+              <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+                <PDFStudentInfoPage 
+                  weekSchedule={weekSchedule} 
+                  weeklyReps={weeklyReps} 
+                />
+              </div>
+              
+              {/* Workouts Page - Preview only (no ref) */}
+              <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+                <PDFWorkoutsPage workouts={workouts} />
+              </div>
+              
+              {/* Recommendations Page - Preview only (no ref) */}
+              {(recommendations || trainingMethods) && (
+                <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+                  <PDFRecommendationsPage 
+                    recommendations={recommendations}
+                    trainingMethods={trainingMethods}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden PDF pages for export (needed for html2canvas) - Keep in viewport but invisible */}
+      <div style={{ position: 'fixed', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+        <div ref={coverRef} style={{ width: '210mm', height: '297mm' }}>
           <PDFCoverPage studentName={studentName} />
         </div>
-        <div ref={infoRef}>
+        <div ref={infoRef} data-pdf-info style={{ width: '210mm', height: '297mm' }}>
           <PDFStudentInfoPage 
-            student={studentData} 
             weekSchedule={weekSchedule} 
             weeklyReps={weeklyReps} 
           />
         </div>
-        <div ref={workoutsRef}>
+        <div ref={workoutsRef} data-pdf-workouts style={{ width: '210mm', minHeight: '297mm' }}>
           <PDFWorkoutsPage workouts={workouts} />
         </div>
+        {(recommendations || trainingMethods) && (
+          <div ref={recommendationsRef} style={{ width: '210mm', height: '297mm' }}>
+            <PDFRecommendationsPage 
+              recommendations={recommendations}
+              trainingMethods={trainingMethods}
+            />
+          </div>
+        )}
       </div>
 
       <div className="container mx-auto px-4 py-8" ref={printRef}>
