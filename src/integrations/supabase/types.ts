@@ -136,7 +136,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          recommendations: string | null
           student_id: string
+          training_methods: string | null
           updated_at: string
           week_day1: string | null
           week_day2: string | null
@@ -155,7 +157,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          recommendations?: string | null
           student_id: string
+          training_methods?: string | null
           updated_at?: string
           week_day1?: string | null
           week_day2?: string | null
@@ -174,7 +178,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          recommendations?: string | null
           student_id?: string
+          training_methods?: string | null
           updated_at?: string
           week_day1?: string | null
           week_day2?: string | null
