@@ -31,7 +31,7 @@ export default function WorkoutPlan() {
   const [weeklyReps, setWeeklyReps] = useState<Array<{ reps: string; rest: string }>>([]);
   const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
   const [recommendations, setRecommendations] = useState("");
-  const [trainingMethods, setTrainingMethods] = useState("");
+  const [trainingMethods, setTrainingMethods] = useState<string>("");
   useEffect(() => {
     fetchWorkout();
   }, [workoutId]);
@@ -78,8 +78,8 @@ export default function WorkoutPlan() {
         { reps: planData.week4_reps || "", rest: planData.week4_rest || "" },
       ]);
 
-      setRecommendations(planData.recommendations || "");
-      setTrainingMethods(planData.training_methods || "");
+      setRecommendations((planData as any).recommendations || "");
+      setTrainingMethods((planData as any).training_methods || "");
 
       const { data: daysData, error: daysError } = await supabase
         .from("workout_days")

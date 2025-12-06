@@ -49,7 +49,15 @@ export default function EditWorkout() {
   });
 
   const [recommendations, setRecommendations] = useState("");
-  const [trainingMethods, setTrainingMethods] = useState("");
+  
+  interface TrainingMethod {
+    title: string;
+    description: string;
+  }
+  
+  const [trainingMethods, setTrainingMethods] = useState<TrainingMethod[]>([
+    { title: "", description: "" }
+  ]);
 
   const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([]);
 
@@ -89,8 +97,23 @@ export default function EditWorkout() {
         week4: { reps: planData.week4_reps || "", rest: planData.week4_rest || "" },
       });
 
-      setRecommendations(planData.recommendations || "");
-      setTrainingMethods(planData.training_methods || "");
+      setRecommendations((planData as any).recommendations || "");
+      
+      // Parse training methods from JSON
+      if ((planData as any).training_methods) {
+        try {
+          const parsed = JSON.parse((planData as any).training_methods);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTrainingMethods(parsed);
+          } else {
+            setTrainingMethods([{ title: "", description: "" }]);
+          }
+        } catch {
+          setTrainingMethods([{ title: "", description: "" }]);
+        }
+      } else {
+        setTrainingMethods([{ title: "", description: "" }]);
+      }
 
       // Fetch workout days and exercises
       const { data: daysData, error: daysError } = await supabase
@@ -211,7 +234,7 @@ export default function EditWorkout() {
           week4_reps: weeklyReps.week4.reps,
           week4_rest: weeklyReps.week4.rest,
           recommendations: recommendations || null,
-          training_methods: trainingMethods || null,
+          training_methods: trainingMethods.length > 0 && trainingMethods[0].title ? JSON.stringify(trainingMethods.filter(m => m.title.trim() !== "")) : null,
         })
         .eq("id", workoutId);
 
@@ -372,13 +395,56 @@ export default function EditWorkout() {
 
           {/* Training Methods */}
           <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Métodos de Treino</h2>
-            <Textarea
-              placeholder="Digite os métodos de treino (ex: BI-SET: Realizar dois exercícios consecutivos sem descanso...)"
-              value={trainingMethods}
-              onChange={(e) => setTrainingMethods(e.target.value)}
-              className="min-h-[200px]"
-            />
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Métodos de Treino</h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTrainingMethods([...trainingMethods, { title: "", description: "" }])}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar Método
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {trainingMethods.map((method, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold">Método {index + 1}</Label>
+                    {trainingMethods.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setTrainingMethods(trainingMethods.filter((_, i) => i !== index))}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Input
+                    placeholder="Título do método (ex: BI-SET, CARGA MÁXIMA, REST-PAUSE...)"
+                    value={method.title}
+                    onChange={(e) => {
+                      const newMethods = [...trainingMethods];
+                      newMethods[index].title = e.target.value;
+                      setTrainingMethods(newMethods);
+                    }}
+                  />
+                  <Textarea
+                    placeholder="Descrição do método (ex: Realizar dois exercícios consecutivos sem descanso...)"
+                    value={method.description}
+                    onChange={(e) => {
+                      const newMethods = [...trainingMethods];
+                      newMethods[index].description = e.target.value;
+                      setTrainingMethods(newMethods);
+                    }}
+                    className="min-h-[100px]"
+                  />
+                </div>
+              ))}
+            </div>
           </Card>
 
           {/* Workout Days */}
