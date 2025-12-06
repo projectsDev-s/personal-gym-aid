@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, History, Download, Eye, EyeOff, X } from "lucide-react";
+import { ArrowLeft, Pencil, History, Eye, EyeOff, X, Download } from "lucide-react";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PDFCoverPage } from "@/components/PDFCoverPage";
 import { PDFStudentInfoPage } from "@/components/PDFStudentInfoPage";
@@ -21,8 +21,13 @@ export default function WorkoutPlan() {
   const infoRef = useRef<HTMLDivElement>(null);
   const workoutsRef = useRef<HTMLDivElement>(null);
   const recommendationsRef = useRef<HTMLDivElement>(null);
+  
+  // Refs for PDF preview modal elements
+  const previewCoverRef = useRef<HTMLDivElement>(null);
+  const previewInfoRef = useRef<HTMLDivElement>(null);
+  const previewWorkoutsRef = useRef<HTMLDivElement>(null);
+  const previewRecommendationsRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -119,16 +124,12 @@ export default function WorkoutPlan() {
 
   const workoutLabels = ["A", "B", "C", "D", "E", "F"];
 
-  const handleExportPDF = async () => {
-    if (!coverRef.current || !infoRef.current || !workoutsRef.current) return;
+  const handleDownloadPDF = async () => {
+    if (!previewCoverRef.current || !previewInfoRef.current || !previewWorkoutsRef.current) return;
     
     const hasRecommendations = recommendations || trainingMethods;
     
-    setExporting(true);
     try {
-      // Small delay to ensure all elements are rendered
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -138,8 +139,8 @@ export default function WorkoutPlan() {
       const imgWidth = 210;
       const pageHeight = 297;
 
-      // Capture cover page
-      const coverCanvas = await html2canvas(coverRef.current, {
+      // Capture cover page from preview
+      const coverCanvas = await html2canvas(previewCoverRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -149,9 +150,9 @@ export default function WorkoutPlan() {
       const coverImgData = coverCanvas.toDataURL("image/png");
       pdf.addImage(coverImgData, "PNG", 0, 0, imgWidth, pageHeight);
 
-      // Capture student info page
+      // Capture student info page from preview
       pdf.addPage();
-      const infoCanvas = await html2canvas(infoRef.current, {
+      const infoCanvas = await html2canvas(previewInfoRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -161,40 +162,55 @@ export default function WorkoutPlan() {
       const infoImgData = infoCanvas.toDataURL("image/png");
       pdf.addImage(infoImgData, "PNG", 0, 0, imgWidth, pageHeight);
 
-      // Capture workouts page
-      pdf.addPage();
-      const workoutsCanvas = await html2canvas(workoutsRef.current, {
+      // Capture workouts page from preview
+      const workoutsCanvas = await html2canvas(previewWorkoutsRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#18181b",
         allowTaint: true,
       });
-      const workoutsImgData = workoutsCanvas.toDataURL("image/png");
-      const workoutsImgHeight = (workoutsCanvas.height * imgWidth) / workoutsCanvas.width;
       
-      // Handle multiple pages for workouts if needed
-      let heightLeft = workoutsImgHeight;
-      let position = 0;
-      
-      pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
-      heightLeft -= pageHeight;
+      // Check if canvas has valid content
+      if (workoutsCanvas.width > 0 && workoutsCanvas.height > 0) {
+        const workoutsImgData = workoutsCanvas.toDataURL("image/png");
+        const workoutsImgHeight = (workoutsCanvas.height * imgWidth) / workoutsCanvas.width;
+        
+        // Only create new page if there's meaningful content (at least 50mm)
+        if (workoutsImgHeight > 50) {
+          pdf.addPage();
+          
+          // If content fits in one page, add it directly
+          if (workoutsImgHeight <= pageHeight) {
+            pdf.addImage(workoutsImgData, "PNG", 0, 0, imgWidth, workoutsImgHeight);
+          } else {
+            // Handle multiple pages for workouts if content exceeds one page
+            let heightLeft = workoutsImgHeight;
+            let position = 0;
+            
+            // Add first page
+            pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
+            heightLeft -= pageHeight;
 
-      while (heightLeft > 0) {
-        position = heightLeft - workoutsImgHeight;
-        pdf.addPage();
-        pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
-        heightLeft -= pageHeight;
+            // Only add more pages if there's significant content left (more than 10mm)
+            while (heightLeft > 10) {
+              position = heightLeft - workoutsImgHeight;
+              pdf.addPage();
+              pdf.addImage(workoutsImgData, "PNG", 0, position, imgWidth, workoutsImgHeight);
+              heightLeft -= pageHeight;
+            }
+          }
+        }
       }
 
-      // Capture recommendations page if exists
-      if (hasRecommendations && recommendationsRef.current) {
+      // Capture recommendations page from preview if exists
+      if (hasRecommendations && previewRecommendationsRef.current) {
         pdf.addPage();
-        const recommendationsCanvas = await html2canvas(recommendationsRef.current, {
+        const recommendationsCanvas = await html2canvas(previewRecommendationsRef.current, {
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: "#ffffff",
+          backgroundColor: "#18181b",
           allowTaint: true,
         });
         const recommendationsImgData = recommendationsCanvas.toDataURL("image/png");
@@ -202,12 +218,10 @@ export default function WorkoutPlan() {
       }
 
       pdf.save(`treino-${studentName.replace(/\s+/g, "-").toLowerCase()}.pdf`);
-      toast.success("PDF exportado com sucesso!");
+      toast.success("PDF baixado com sucesso!");
     } catch (error) {
-      console.error("Error exporting PDF:", error);
-      toast.error("Erro ao exportar PDF");
-    } finally {
-      setExporting(false);
+      console.error("Error downloading PDF:", error);
+      toast.error("Erro ao baixar PDF");
     }
   };
 
@@ -260,15 +274,6 @@ export default function WorkoutPlan() {
                 )}
               </Button>
               <Button
-                variant="outline"
-                className="gap-2"
-                onClick={handleExportPDF}
-                disabled={exporting}
-              >
-                <Download className="w-4 h-4" />
-                {exporting ? "Exportando..." : "Exportar PDF"}
-              </Button>
-              <Button
                 className="gap-2 font-bold"
                 onClick={() => navigate(`/workout/${workoutId}/edit`)}
               >
@@ -284,36 +289,46 @@ export default function WorkoutPlan() {
       {showPDFPreview && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="relative w-full max-w-4xl">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white"
-              onClick={() => setShowPDFPreview(false)}
-            >
-              <X className="w-5 h-5" />
-            </Button>
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              <Button
+                variant="default"
+                className="gap-2 bg-white text-gray-900 hover:bg-gray-100"
+                onClick={handleDownloadPDF}
+              >
+                <Download className="w-4 h-4" />
+                Baixar PDF
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-white/90 hover:bg-white"
+                onClick={() => setShowPDFPreview(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
             <div className="bg-white rounded-lg shadow-2xl p-4 space-y-4 max-h-[90vh] overflow-y-auto">
-              {/* Cover Page - Preview only (no ref) */}
-              <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+              {/* Cover Page - Preview with ref */}
+              <div ref={previewCoverRef} className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
                 <PDFCoverPage studentName={studentName} />
               </div>
               
-              {/* Info Page - Preview only (no ref) */}
-              <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+              {/* Info Page - Preview with ref */}
+              <div ref={previewInfoRef} className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
                 <PDFStudentInfoPage 
                   weekSchedule={weekSchedule} 
                   weeklyReps={weeklyReps} 
                 />
               </div>
               
-              {/* Workouts Page - Preview only (no ref) */}
-              <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+              {/* Workouts Page - Preview with ref */}
+              <div ref={previewWorkoutsRef} className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
                 <PDFWorkoutsPage workouts={workouts} />
               </div>
               
-              {/* Recommendations Page - Preview only (no ref) */}
+              {/* Recommendations Page - Preview with ref */}
               {(recommendations || trainingMethods) && (
-                <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
+                <div ref={previewRecommendationsRef} className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
                   <PDFRecommendationsPage 
                     recommendations={recommendations}
                     trainingMethods={trainingMethods}
@@ -325,22 +340,62 @@ export default function WorkoutPlan() {
         </div>
       )}
 
-      {/* Hidden PDF pages for export (needed for html2canvas) - Keep in viewport but invisible */}
-      <div style={{ position: 'fixed', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-        <div ref={coverRef} style={{ width: '210mm', height: '297mm' }}>
+      {/* Hidden PDF pages for export (needed for html2canvas) */}
+      <div 
+        style={{ 
+          position: 'absolute', 
+          left: '-9999px', 
+          top: 0,
+          width: '210mm',
+          overflow: 'visible'
+        }}
+      >
+        <div 
+          ref={coverRef} 
+          style={{ 
+            width: '210mm', 
+            height: '297mm', 
+            position: 'relative',
+            overflow: 'visible'
+          }}
+        >
           <PDFCoverPage studentName={studentName} />
         </div>
-        <div ref={infoRef} data-pdf-info style={{ width: '210mm', height: '297mm' }}>
+        <div 
+          ref={infoRef} 
+          style={{ 
+            width: '210mm', 
+            height: '297mm', 
+            position: 'relative',
+            overflow: 'visible'
+          }}
+        >
           <PDFStudentInfoPage 
             weekSchedule={weekSchedule} 
             weeklyReps={weeklyReps} 
           />
         </div>
-        <div ref={workoutsRef} data-pdf-workouts style={{ width: '210mm', minHeight: '297mm' }}>
+        <div 
+          ref={workoutsRef} 
+          style={{ 
+            width: '210mm', 
+            minHeight: '297mm', 
+            position: 'relative',
+            overflow: 'visible'
+          }}
+        >
           <PDFWorkoutsPage workouts={workouts} />
         </div>
         {(recommendations || trainingMethods) && (
-          <div ref={recommendationsRef} style={{ width: '210mm', height: '297mm' }}>
+          <div 
+            ref={recommendationsRef} 
+            style={{ 
+              width: '210mm', 
+              height: '297mm', 
+              position: 'relative',
+              overflow: 'visible'
+            }}
+          >
             <PDFRecommendationsPage 
               recommendations={recommendations}
               trainingMethods={trainingMethods}
@@ -379,7 +434,7 @@ export default function WorkoutPlan() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-1 gap-4">
+        <div className="grid md:grid-cols-1 gap-4 mb-8">
           {workouts.map((workout, index) => (
             <WorkoutCard
               key={workout.id}
@@ -388,6 +443,51 @@ export default function WorkoutPlan() {
             />
           ))}
         </div>
+
+        {/* Recommendations */}
+        {recommendations && (
+          <div className="mb-8 p-6 bg-muted/50 rounded-xl">
+            <h2 className="text-xl font-bold mb-4">Recomendações</h2>
+            <div className="space-y-2">
+              {recommendations.split('\n').filter(line => line.trim() !== '').map((line, index) => (
+                <p key={index} className="text-foreground leading-relaxed">
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Training Methods */}
+        {trainingMethods && (() => {
+          let parsedMethods: Array<{ title: string; description: string }> = [];
+          try {
+            const parsed = JSON.parse(trainingMethods);
+            if (Array.isArray(parsed)) {
+              parsedMethods = parsed.filter(m => m.title && m.title.trim() !== "");
+            }
+          } catch {
+            parsedMethods = [];
+          }
+
+          return parsedMethods.length > 0 ? (
+            <div className="mb-8 p-6 bg-muted/50 rounded-xl">
+              <h2 className="text-xl font-bold mb-4">Métodos de Treino</h2>
+              <div className="space-y-4">
+                {parsedMethods.map((method, index) => (
+                  <div key={index} className="space-y-2">
+                    <h3 className="text-lg font-bold text-foreground uppercase">
+                      {method.title}:
+                    </h3>
+                    <p className="text-foreground leading-relaxed ml-4">
+                      {method.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null;
+        })()}
       </div>
     </div>
   );

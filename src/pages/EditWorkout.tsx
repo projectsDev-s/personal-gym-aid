@@ -216,29 +216,70 @@ export default function EditWorkout() {
     setSaving(true);
 
     try {
-      // Update workout plan
+      // Prepare training methods JSON
+      const filteredMethods = trainingMethods.filter(m => m.title && m.title.trim() !== "");
+      const trainingMethodsJson = filteredMethods.length > 0 ? JSON.stringify(filteredMethods) : null;
+
+      // Update workout plan - build object conditionally
+      const updateData: Record<string, any> = {
+        week_day1: weekSchedule.day1 || null,
+        week_day2: weekSchedule.day2 || null,
+        week_day3: weekSchedule.day3 || null,
+        week_day4: weekSchedule.day4 || null,
+        week_day5: weekSchedule.day5 || null,
+        week1_reps: weeklyReps.week1.reps || null,
+        week1_rest: weeklyReps.week1.rest || null,
+        week2_reps: weeklyReps.week2.reps || null,
+        week2_rest: weeklyReps.week2.rest || null,
+        week3_reps: weeklyReps.week3.reps || null,
+        week3_rest: weeklyReps.week3.rest || null,
+        week4_reps: weeklyReps.week4.reps || null,
+        week4_rest: weeklyReps.week4.rest || null,
+      };
+
+      // Add new fields (may not exist if migration not run)
+      try {
+        updateData.recommendations = recommendations || null;
+        updateData.training_methods = trainingMethodsJson;
+      } catch (e) {
+        // If fields don't exist, continue without them
+        console.warn("New fields may not exist in database yet");
+      }
+
       const { error: planError } = await supabase
         .from("workout_plans")
-        .update({
-          week_day1: weekSchedule.day1,
-          week_day2: weekSchedule.day2,
-          week_day3: weekSchedule.day3,
-          week_day4: weekSchedule.day4,
-          week_day5: weekSchedule.day5,
-          week1_reps: weeklyReps.week1.reps,
-          week1_rest: weeklyReps.week1.rest,
-          week2_reps: weeklyReps.week2.reps,
-          week2_rest: weeklyReps.week2.rest,
-          week3_reps: weeklyReps.week3.reps,
-          week3_rest: weeklyReps.week3.rest,
-          week4_reps: weeklyReps.week4.reps,
-          week4_rest: weeklyReps.week4.rest,
-          recommendations: recommendations || null,
-          training_methods: trainingMethods.length > 0 && trainingMethods[0].title ? JSON.stringify(trainingMethods.filter(m => m.title.trim() !== "")) : null,
-        })
+        .update(updateData)
         .eq("id", workoutId);
 
-      if (planError) throw planError;
+      if (planError) {
+        console.error("Plan update error:", planError);
+        // If error is about missing columns, try without them
+        if (planError.message?.includes("column") && planError.message?.includes("does not exist")) {
+          const { error: retryError } = await supabase
+            .from("workout_plans")
+            .update({
+              week_day1: weekSchedule.day1 || null,
+              week_day2: weekSchedule.day2 || null,
+              week_day3: weekSchedule.day3 || null,
+              week_day4: weekSchedule.day4 || null,
+              week_day5: weekSchedule.day5 || null,
+              week1_reps: weeklyReps.week1.reps || null,
+              week1_rest: weeklyReps.week1.rest || null,
+              week2_reps: weeklyReps.week2.reps || null,
+              week2_rest: weeklyReps.week2.rest || null,
+              week3_reps: weeklyReps.week3.reps || null,
+              week3_rest: weeklyReps.week3.rest || null,
+              week4_reps: weeklyReps.week4.reps || null,
+              week4_rest: weeklyReps.week4.rest || null,
+            })
+            .eq("id", workoutId);
+          
+          if (retryError) throw retryError;
+          toast.warning("Campos de recomendações e métodos não encontrados. Execute a migration.");
+        } else {
+          throw planError;
+        }
+      }
 
       // Delete existing workout days and exercises
       const { error: deleteError } = await supabase

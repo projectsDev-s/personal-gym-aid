@@ -1,4 +1,4 @@
-import logoSteven from "@/assets/logo-steven.png";
+import logo from "@/assets/logo";
 
 interface PDFStudentInfoPageProps {
   weekSchedule: string[];
@@ -7,22 +7,19 @@ interface PDFStudentInfoPageProps {
 
 export const PDFStudentInfoPage = ({ weekSchedule, weeklyReps }: PDFStudentInfoPageProps) => {
   return (
-    <div className="h-[297mm] w-[210mm] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-8 relative flex flex-col justify-center">
-      {/* Background decorative elements */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
+    <div className="min-h-[297mm] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-12 relative flex flex-col justify-center text-white">
       
       {/* Logo */}
-      <div className="flex justify-center mb-6 relative z-10">
+      <div className="flex justify-center mb-6">
         <img 
-          src={logoSteven} 
-          alt="Steven Cardoso Logo" 
+          src={logo} 
+          alt="Logo" 
           className="w-40 h-auto opacity-90"
         />
       </div>
 
       {/* Content Container - Centered */}
-      <div className="flex-1 flex flex-col justify-center relative z-10">
+      <div className="flex-1 flex flex-col justify-center">
         {/* Cronograma Semanal */}
         <div className="mb-8">
           <div className="flex items-center justify-center mb-4">

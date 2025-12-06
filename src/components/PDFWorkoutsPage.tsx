@@ -1,5 +1,5 @@
 import { WorkoutDay } from "@/types/student";
-import logoSteven from "@/assets/logo-steven.png";
+import logo from "@/assets/logo";
 
 interface PDFWorkoutsPageProps {
   workouts: WorkoutDay[];
@@ -15,22 +15,22 @@ export const PDFWorkoutsPage = ({ workouts }: PDFWorkoutsPageProps) => {
   };
 
   return (
-    <div className="h-[297mm] w-[210mm] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-8 relative flex flex-col items-center justify-center">
-      {/* Background decorative elements */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
-      
-      {/* Logo centered */}
-      <div className="absolute top-1/2 left-1/2" style={{ transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
+    <div className="min-h-[297mm] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-12 relative flex flex-col text-white">
+      {/* Logo and Title at top */}
+      <div className="flex flex-col items-center mb-8">
         <img 
-          src={logoSteven} 
-          alt="Steven Cardoso Logo" 
-          className="w-48 h-auto opacity-20"
+          src={logo} 
+          alt="Logo" 
+          className="w-40 h-auto opacity-90 mb-8"
         />
+        <h1 className="text-3xl font-black text-center mb-6 tracking-wider text-white uppercase border-b-2 border-orange-500 pb-2 w-full">
+          TREINOS
+        </h1>
       </div>
 
-      {/* Workout Cards - Centered vertically */}
-      <div className="space-y-3 relative" style={{ zIndex: 10, width: '100%' }}>
+      {/* Workout Cards - Centered vertically in remaining space */}
+      <div className="flex-1 flex flex-col justify-center min-h-0">
+        <div className="space-y-3 w-full">
         {workouts.map((workout, index) => {
           const [leftExercises, rightExercises] = splitExercises(workout.exercises);
           
@@ -40,12 +40,13 @@ export const PDFWorkoutsPage = ({ workouts }: PDFWorkoutsPageProps) => {
               className="bg-white rounded-lg shadow-sm overflow-hidden flex"
             >
               {/* Left Vertical Orange Strip */}
-              <div className="bg-orange-500 w-14 flex flex-col items-center justify-start py-3 px-1.5">
-                <div 
-                  className="text-white font-black text-xs uppercase tracking-wider mb-3"
-                  style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-                >
-                  TREINO
+              <div className="bg-orange-500 w-14 flex flex-col items-center justify-center py-3 px-1.5">
+                <div className="flex flex-col items-center mb-3">
+                  {"TREINO".split("").map((letter, i) => (
+                    <span key={i} className="text-white font-black text-xs uppercase tracking-wider">
+                      {letter}
+                    </span>
+                  ))}
                 </div>
                 <div className="text-white font-black text-4xl">
                   {workoutLabels[index]}
@@ -105,6 +106,7 @@ export const PDFWorkoutsPage = ({ workouts }: PDFWorkoutsPageProps) => {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

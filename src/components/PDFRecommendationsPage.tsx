@@ -1,4 +1,4 @@
-import logoSteven from "@/assets/logo-steven.png";
+import logo from "@/assets/logo";
 
 interface TrainingMethod {
   title: string;
@@ -34,12 +34,12 @@ export const PDFRecommendationsPage = ({ recommendations, trainingMethods }: PDF
   }
 
   return (
-    <div className="h-[297mm] w-[210mm] bg-white p-8 relative flex flex-col">
+    <div className="min-h-[297mm] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-12 relative flex flex-col text-white">
       {/* Logo */}
       <div className="flex justify-center mb-6">
         <img 
-          src={logoSteven} 
-          alt="Steven Cardoso Logo" 
+          src={logo} 
+          alt="Logo" 
           className="w-40 h-auto opacity-90"
         />
       </div>
@@ -48,12 +48,12 @@ export const PDFRecommendationsPage = ({ recommendations, trainingMethods }: PDF
         {/* Recommendations Section */}
         {recommendations && (
           <div>
-            <h2 className="text-3xl font-black text-center mb-6 tracking-wider text-gray-900 uppercase border-b-2 border-orange-500 pb-2">
+            <h2 className="text-3xl font-black text-center mb-6 tracking-wider text-white uppercase border-b-2 border-orange-500 pb-2">
               RECOMENDAÇÕES
             </h2>
             <div className="space-y-3">
               {recommendationsLines.map((line, index) => (
-                <p key={index} className="text-gray-900 text-base leading-relaxed">
+                <p key={index} className="text-white text-base leading-relaxed">
                   {line}
                 </p>
               ))}
@@ -64,16 +64,16 @@ export const PDFRecommendationsPage = ({ recommendations, trainingMethods }: PDF
         {/* Training Methods Section */}
         {parsedMethods.length > 0 && (
           <div>
-            <h2 className="text-3xl font-black text-center mb-6 tracking-wider text-gray-900 uppercase border-b-2 border-orange-500 pb-2">
+            <h2 className="text-3xl font-black text-center mb-6 tracking-wider text-white uppercase border-b-2 border-orange-500 pb-2">
               MÉTODOS DE TREINO
             </h2>
             <div className="space-y-4">
               {parsedMethods.map((method, index) => (
                 <div key={index} className="space-y-2">
-                  <h3 className="text-xl font-black text-gray-900 uppercase">
+                  <h3 className="text-xl font-black text-white uppercase">
                     {method.title}:
                   </h3>
-                  <p className="text-gray-900 text-base leading-relaxed ml-4">
+                  <p className="text-white text-base leading-relaxed ml-4">
                     {method.description}
                   </p>
                 </div>
